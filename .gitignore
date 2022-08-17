@@ -3,3 +3,5 @@
 yolov5s.pt
 log_model
 runs
+*.xml
+*.iml
