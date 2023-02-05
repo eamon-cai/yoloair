@@ -1,6 +1,0 @@
-*.pyc
-*.DS_Store
-yolov5s.pt
-log_model
-runs
-*.idea
