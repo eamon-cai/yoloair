@@ -1,4 +1,4 @@
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# YOLOv8 🚀 by Ultralytics, GPL-3.0 license
 """
 YOLO-specific modules
 
@@ -28,7 +28,7 @@ from utils.general import LOGGER, check_version, check_yaml, make_divisible, pri
 from utils.plots import feature_visualization
 from utils.torch_utils import (fuse_conv_and_bn, initialize_weights, model_info, profile, scale_img, select_device,
                                time_sync)
-from utils.tal.anchor_generator import make_anchors, dist2bbox
+from utils.loss import make_anchors, dist2bbox
 
 try:
     import thop  # for FLOPs computation
@@ -36,8 +36,8 @@ except ImportError:
     thop = None
 
 
-class V6Detect(nn.Module):
-    # YOLOv5 Detect head for detection models
+class Detects(nn.Module):
+    # Detect head for detection models
     dynamic = False  # force grid reconstruction
     export = False  # export mode
     shape = None
@@ -55,9 +55,9 @@ class V6Detect(nn.Module):
 
         c2, c3 = max(ch[0] // 4, self.reg_max * 4), max(ch[0], self.nc)  # channels
         self.cv2 = nn.ModuleList(
-            nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), Conv(c2, 4 * self.reg_max, 1)) for x in ch)
+            nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch)
         self.cv3 = nn.ModuleList(
-            nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), Conv(c3, self.nc, 1, act=False)) for x in ch)
+            nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nc, 1)) for x in ch)
         self.dfl = DFL(self.reg_max)
 
     def forward(self, x):
@@ -81,12 +81,12 @@ class V6Detect(nn.Module):
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1
         # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # nominal class frequency
         for a, b, s in zip(m.cv2, m.cv3, m.stride):  # from
-            a[-1].bn.bias.data[:] = 1.0  # box
-            b[-1].bn.bias.data[:m.nc] = math.log(.01 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
+            a[-1].bias.data[:] = 1.0  # box
+            b[-1].bias.data[:m.nc] = math.log(.01 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
 
 
 class Detect(nn.Module):
-    # YOLOv5 Detect head for detection models
+    # Detect head for detection models
     stride = None  # strides computed during build
     dynamic = False  # force grid reconstruction
     export = False  # export mode
@@ -151,7 +151,7 @@ class Detect(nn.Module):
 
 
 class Segment(Detect):
-    # YOLOv5 Segment head for segmentation models
+    # Segment head for segmentation models
     def __init__(self, nc=80, anchors=(), nm=32, npr=256, ch=(), inplace=True):
         super().__init__(nc, anchors, ch, inplace)
         self.nm = nm  # number of masks
@@ -219,7 +219,7 @@ class BaseModel(nn.Module):
             for k in 'stride', 'anchor_grid', 'stride_grid', 'grid':
                 x = getattr(m, k)
                 setattr(m, k, list(map(fn, x))) if isinstance(x, (list, tuple)) else setattr(m, k, fn(x))
-        elif isinstance(m, V6Detect):
+        elif isinstance(m, Detects):
             m.stride = fn(m.stride)
             m.anchors = fn(m.anchors)
             m.strides = fn(m.strides)
@@ -253,15 +253,15 @@ class DetectionModel(BaseModel):
 
         # Build strides, anchors
         m = self.model[-1]  # Detect()
-        if isinstance(m, (Detect, Segment, V6Detect)):
+        if isinstance(m, (Detect, Segment, Detects)):
             s = 256  # 2x min stride
             m.inplace = self.inplace
-            forward = lambda x: self.forward(x)[0] if isinstance(m, (Segment, V6Detect)) else self.forward(x)
+            forward = lambda x: self.forward(x)[0] if isinstance(m, (Segment, Detects)) else self.forward(x)
             m.stride = torch.tensor([s / x.shape[-2] for x in forward(torch.zeros(1, ch, s, s))])  # forward
             # check_anchor_order(m)
             # m.anchors /= m.stride.view(-1, 1, 1)
             self.stride = m.stride
-            if isinstance(m, V6Detect):
+            if isinstance(m, Detects):
                 m.bias_init()  # only run once
 
         # Init weights, biases
@@ -349,15 +349,17 @@ class ClassificationModel(BaseModel):
 def parse_model(d, ch):  # model_dict, input_channels(3)
     # Parse a YOLOv5 model.yaml dictionary
     LOGGER.info(f"\n{'':>3}{'from':>18}{'n':>3}{'params':>10}  {'module':<40}{'arguments':<30}")
-    anchors, nc, gd, gw, act = d['anchors'], d['nc'], d['depth_multiple'], d['width_multiple'], d.get('activation')
+    anchors, nc, act = d['anchors'], d['nc'], d.get('activation')
     if act:
         Conv.default_act = eval(act)  # redefine default activation, i.e. Conv.default_act = nn.SiLU()
         LOGGER.info(f"{colorstr('activation:')} {act}")  # print
     na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
     no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
+    scale_model = d['scales']
+    gd, gw = scale_model[1], scale_model[2]
 
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
-    for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
+    for i, (f, n, m, args) in enumerate(d['backbone'] + d['neck'] + d['head']):  # from, number, module, args
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
             with contextlib.suppress(NameError):
@@ -381,7 +383,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         # TODO: channel, gw, gd
-        elif m in {V6Detect, Detect, Segment}:
+        elif m in {Detects, Detect, Segment}:
             args.append([ch[x] for x in f])
             # if isinstance(args[1], int):  # number of anchors
             #     args[1] = [list(range(args[1] * 2))] * len(f)
@@ -409,7 +411,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='yolov8l-3.yaml', help='model.yaml')
+    parser.add_argument('--cfg', type=str, default='yolov8n.yaml', help='model.yaml')
     parser.add_argument('--batch-size', type=int, default=1, help='total batch size for all GPUs')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--profile', action='store_true', help='profile model speed')
@@ -441,7 +443,7 @@ if __name__ == '__main__':
 
         # Update model
         for k, m in model.named_modules():
-            if isinstance(m, (Detect, V6Detect)):
+            if isinstance(m, (Detect, Detects)):
                 m.export = True
         for _ in range(2):
             model(im)

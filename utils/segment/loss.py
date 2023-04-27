@@ -3,11 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..general import xywh2xyxy
-from ..loss import FocalLoss, smooth_BCE
 from ..metrics import bbox_iou
 from ..torch_utils import de_parallel
 from .general import crop_mask
 
+def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
+    # return positive, negative label smoothing BCE targets
+    return 1.0 - 0.5 * eps, 0.5 * eps
 
 class ComputeLoss:
     # Compute losses
@@ -26,9 +28,6 @@ class ComputeLoss:
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
 
         # Focal loss
-        g = h['fl_gamma']  # focal loss gamma
-        if g > 0:
-            BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
 
         m = de_parallel(model).model[-1]  # Detect() module
         self.balance = {3: [4.0, 1.0, 0.4]}.get(m.nl, [4.0, 1.0, 0.25, 0.06, 0.02])  # P3-P7

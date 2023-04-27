@@ -2,8 +2,8 @@
 
 # Parameters
 nc: 80  # number of classes
-depth_multiple: 1.00  # model depth multiple
-width_multiple: 1.25  # layer channel multiple
+depth_multiple: 0.33  # model depth multiple
+width_multiple: 0.50  # layer channel multiple
 anchors: 3
 
 # YOLOv5 v6.0 backbone
@@ -52,5 +52,5 @@ head:
    [[-1, 12], 1, Concat, [1]],  # cat head P6
    [-1, 1, C2, [1024, False]],  # 32 (P6/64-xlarge)
 
-   [[23, 26, 29, 32], 1, V6Detect, [nc]],  # Detect(P3, P4, P5, P6)
+   [[23, 26, 29, 32], 1, Detects, [nc]],  # Detect(P3, P4, P5, P6)
   ]
