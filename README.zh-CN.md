@@ -597,7 +597,7 @@ ______________________________________________________________________
 
 <details><summary> <b>Expand</b> </summary>
 
-[https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
+[https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)  
 [https://github.com/iscyy/yoloair](https://github.com/iscyy/yoloair)
 
 </details>
