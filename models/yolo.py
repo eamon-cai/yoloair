@@ -4,6 +4,7 @@ YOLO-specific modules
 
 Usage:
     $ python path/to/models/yolo.py --cfg yolov5s.yaml
+    # OFUUSAE
 """
 
 import argparse
@@ -26,6 +27,9 @@ from utils.autoanchor import check_anchor_order
 from utils.general import LOGGER, check_version, check_yaml, make_divisible, print_args
 from utils.plots import feature_visualization
 from utils.torch_utils import fuse_conv_and_bn, initialize_weights, model_info, scale_img, select_device, time_sync
+
+from models.Core2024.Dysample import DySample
+from models.Core2024.EMO import C3_RMB, CSRMBC, C2f_RMB, CPNRMB, ReNLANRMB
 
 try:
     import thop  # for FLOPs computation
@@ -284,29 +288,7 @@ class Model(nn.Module):
                 m.fuse()
                 m.forward = m.fuseforward
             if type(m) is RepVGGBlock:
-                if hasattr(m, 'rbr_1x1'):
-                    # print(m)
-                    kernel, bias = m.get_equivalent_kernel_bias()
-                    rbr_reparam = nn.Conv2d(in_channels=m.rbr_dense.conv.in_channels,
-                                            out_channels=m.rbr_dense.conv.out_channels,
-                                            kernel_size=m.rbr_dense.conv.kernel_size,
-                                            stride=m.rbr_dense.conv.stride,
-                                            padding=m.rbr_dense.conv.padding, dilation=m.rbr_dense.conv.dilation,
-                                            groups=m.rbr_dense.conv.groups, bias=True)
-                    rbr_reparam.weight.data = kernel
-                    rbr_reparam.bias.data = bias
-                    for para in self.parameters():
-                        para.detach_()
-                    m.rbr_dense = rbr_reparam
-                    # m.__delattr__('rbr_dense')
-                    m.__delattr__('rbr_1x1')
-                    if hasattr(self, 'rbr_identity'):
-                        m.__delattr__('rbr_identity')
-                    if hasattr(self, 'id_tensor'):
-                        m.__delattr__('id_tensor')
-                    m.deploy = True
-                    delattr(m, 'se')
-                    m.forward = m.fusevggforward  # update forward
+                m.switch_to_deploy()
             if type(m) is CBH and hasattr(m, 'bn'):
                 m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
                 delattr(m, 'bn')  # remove batchnorm
@@ -347,7 +329,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in [Conv, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, MixConv2d, Focus, CrossConv,
-                 BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, C3HB, C3RFEM, MultiSEAM, SEAM, C3STR, MobileOneBlock]:
+                 BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, C3HB, C3RFEM, MultiSEAM, SEAM, C3STR, MobileOneBlock, Densenet121, Densenet169, Densenet201]:
             c1, c2 = ch[f], args[0]
             if c2 != no:  # if not output
                 c2 = make_divisible(c2 * gw, 8)
@@ -359,7 +341,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         # add module research
         elif m in [CARAFE, SPPCSPC, SPPFCSPC, RepConv, BoT3, CA, CBAM, NAMAttention, GAMAttention, Involution, Stem, ResCSPC, ResCSPB, \
                    ResXCSPB, ResXCSPC, BottleneckCSPB, BottleneckCSPC,
-                   ASPP, BasicRFB, SPPCSPC_group, HorBlock, CNeB,C3GC ,C3C2, nn.ConvTranspose2d]:
+                   ASPP, BasicRFB, SPPCSPC_group, HorBlock, CNeB,C3GC ,C3C2, nn.ConvTranspose2d,EffectiveSELayer]:
             c1, c2 = ch[f], args[0]
             if c2 != no:  # if not output
                 c2 = make_divisible(c2 * gw, 8)
@@ -395,11 +377,30 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 n = 1
         elif m in [ReOrg, DWT]:
             c2 = ch[f] * 4
-        elif m in [S2Attention, SimSPPF, ACmix, CrissCrossAttention, SOCA, ShuffleAttention, SEAttention, SimAM, SKAttention]:
+        elif m in [S2Attention, SimSPPF, ACmix, CrissCrossAttention, SOCA, ShuffleAttention, SEAttention, SKAttention]:
             c1, c2 = ch[f], args[0]
             if c2 != no:  # if not output
                 c2 = make_divisible(c2 * gw, 8)
             args = [c1, *args[1:]]
+        # 新增模块Core2024======================
+        elif m is nn.BatchNorm2d:
+            args = [ch[f]]
+        elif m in [DySample]:
+            args = [ch[f], *args[0:]]
+        elif m in [C3_RMB, CSRMBC, C2f_RMB, CPNRMB, ReNLANRMB]:
+            c1, c2 = ch[f], args[0]
+            if c2 != no:  # if not output
+                c2 = make_divisible(c2 * gw, 8)
+            args = [c1, c2, *args[1:]]
+            if m in [C3_RMB, CSRMBC, C2f_RMB, CPNRMB]:
+                args.insert(2, n)  # number of repeats
+                n = 1
+        # 新增模块======================
+        elif m is SimAM:
+            c1, c2 = ch[f], args[0]
+            if c2 != no:  # if not output
+                c2 = make_divisible(c2 * gw, 8)
+            args = [c1, c2, *args[1:]]
         elif m is nn.BatchNorm2d:
             args = [ch[f]]
         elif m is Concat:
@@ -458,6 +459,10 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             c2 = args[0]
         elif m is Expand:  # no
             c2 = ch[f] // args[0] ** 2
+        elif m in [CSPResNet_CBS,CSPResNet,ConvBNLayer,ResSPP,CoordConv]:
+            c2 = args[1]
+        elif m in [ResNet50vd,ResNet50vd_dcn,ResNet101vd,PPConvBlock,Res2net50]:
+            c2 = args[0]
         else:
             c2 = ch[f]
 
@@ -473,6 +478,15 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         ch.append(c2)
     return nn.Sequential(*layers), sorted(save)
 
+
+'''
+██╗   ██╗ ██████╗ ██╗      ██████╗      █████╗     ██╗    ██████╗ 
+╚██╗ ██╔╝██╔═══██╗██║     ██╔═══██╗    ██╔══██╗    ██║    ██╔══██╗
+ ╚████╔╝ ██║   ██║██║     ██║   ██║    ███████║    ██║    ██████╔╝
+  ╚██╔╝  ██║   ██║██║     ██║   ██║    ██╔══██║    ██║    ██╔══██╗
+   ██║   ╚██████╔╝███████╗╚██████╔╝    ██║  ██║    ██║    ██║  ██║
+   ╚═╝    ╚═════╝ ╚══════╝ ╚═════╝     ╚═╝  ╚═╝    ╚═╝    ╚═╝  ╚═╝
+'''
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

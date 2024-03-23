@@ -1,15 +1,45 @@
+## 全新的 UltralyticsPro 项目来袭🚀
+
+🔥🔥🔥专注于YOLOv8改进，NEW - YOLOv8 🚀 in PyTorch >, Support to improve Backbone, Neck, Head, Loss, IoU, LA, NMS and other modules🚀 Makes YOLOv8 improvements easy again
+
+🌟 全新的YOLOv8改进项目**ultralyticsPro**来袭，最新改进点更新🚀2024
+
+**一、 改进YOLOv8 免费内容**<br />本项目持续会更新一些免费的改进点，每周都会更新<br />
+
+3.22更新：
+注意力机制：[ultralytics/cfg/models/cfg2024/YOLOv8-Attention](https://github.com/iscyy/ultralyticsPro/tree/main/ultralytics/cfg/models/cfg2024/YOLOv8-Attention)  
+
+GAM 注意力机制、  
+SA 注意力机制、  
+SimAM 注意力机制、  
+SK 注意力机制、  
+SOCA 注意力机制、  
+CBAM 注意力机制、  
+
+3.23更新：
+金字塔结构：[ultralytics/cfg/models/cfg2024/YOLOv8-金字塔结构改进](https://github.com/iscyy/ultralyticsPro/blob/main/ultralytics/cfg/models/cfg2024/YOLOv8-%E9%87%91%E5%AD%97%E5%A1%94%E7%BB%93%E6%9E%84%E6%94%B9%E8%BF%9B/YOLOv8-ASPP.yaml)  
+
+SPPELAN、  
+SimSPPF、  
+BasicRFB、  
+ASPP、  
+SPPFCSPC  
+
+更多更新，详细点击👉：[https://github.com/iscyy/ultralyticsPro](https://github.com/iscyy/ultralyticsPro)
+
+----------------------------
+
+### 🌟 全新的YOLOAir2024版本来袭，最新改进点更新🚀2024
+
+---------
+
+YOLOv5项目更新
+
+2024.03
+
+新增Dysample上采样改进点：ICCV2023论文：[Dysample上采样改进](./configs2024/yolov5-other/yolov5-dysample.yaml)
+
 ## YOLO Air : Makes improvements easy again
-
-#### News
-手把手改进YOLO系列: 全面改进篇更新🔗：
-[点击查看详情🚀 - 更多更全更新颖·《原创》·《最新》· 手把手改进YOLO系列详细教程(包括改进原理以及改进源代码 · 改进有效涨点)📚](https://github.com/iscyy/yoloair/wiki/Improved-tutorial-presentation)
-
-更新 [🔗 YOLOAir2](https://github.com/iscyy/yoloair2) 目标检测代码库 ☁️💡🎈
-- **Based on the YOLOv7 framework, Pure for improving YOLOv7**
-
-- [YOLOAir2 ](https://github.com/iscyy/yoloair2) is the second version of the YOLOAir series, The framework is based on YOLOv7, including YOLOv7, YOLOv6, YOLOv5, YOLOX, YOLOR, YOLOv4, YOLOv3, Transformer, Attention and Improved-YOLOv7... 
-- As a supplement and perfection of YOLOAir
------
 
 <div align="center">
   <p>
@@ -28,11 +58,7 @@
 ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOv5-red) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOv7-brightgreen) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOv6-blueviolet) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOX-yellow) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-PPYOLOE-007d65) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOv4-green) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-TOOD-6a6da9) 
 ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOv3-yellowgreen) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-YOLOR-lightgrey) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-Scaled_YOLOv4-ff96b4) ![](https://img.shields.io/badge/Support-Transformer-9cf) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-PPYOLO-lightgrey) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-PPYOLOv2-yellowgreen) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-PPYOLOEPlus-d5c59f) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-MLP-ff69b4) ![https://github.com/iscyy/yoloair](https://img.shields.io/badge/Support-Attention-green)
 
-[特性🚀](#主要特性) • [使用🍉](#使用) • [文档📒](https://github.com/iscyy/yoloair) • [报告问题🌟](https://github.com/iscyy/yoloair/issues/new) • [更新💪](#-to-do) • [讨论✌️](https://github.com/iscyy/yoloair/discussions)  
-• [YOLO改进方式教程及原理参考🚀](https://github.com/iscyy/yoloair/wiki/Improved-tutorial-presentation)•
-
-
-![https://github.com/iscyy/yoloair](https://img-blog.csdnimg.cn/f7045ecc4f90430cafc276540dddd702.gif#pic_center)
+[特性🚀](#主要特性) • [使用🍉](#使用) • [文档📒](https://github.com/iscyy/yoloair) • [报告问题🌟](https://github.com/iscyy/yoloair/issues/new) • [更新💪](#更新-)
 
 </div>
 
@@ -595,6 +621,16 @@ $ python wbf.py
 ```
 ______________________________________________________________________
 
+### 技术交流 <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20">
+
+|FightingCV公众号|YOLOAir目标检测交流群( 答案:  yoloair )|
+:-------------------------:|:-------------------------:
+<img src='https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b6f5057da9a8410fa22dcc7566548193~tplv-k3u1fbpfcp-watermark.image?' width='200px'>  |  <img src='https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1882e8cf3f804918a043d70de1b70e31~tplv-k3u1fbpfcp-watermark.image' width='200px'> 
+
+- FightingCV每天分享前沿论文动态(公众号回复加群, 添加小助手, 加入微信交流群)  
+
+- YOLOAir目标检测交流群
+______________________________________________________________________
 
 ### Performance
 | Model                                                                                                | size<br><sup>(pixels) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Speed<br><sup>CPU b1<br>(ms) | Speed<br><sup>V100 b1<br>(ms) | Speed<br><sup>V100 b32<br>(ms) | params<br><sup>(M) | FLOPs<br><sup>@640 (B) | Weights
@@ -691,7 +727,8 @@ ______________________________________________________________________
 ### 未来增强✨
 后续会持续建设和完善 YOLOAir 生态  
 完善集成更多 YOLO 系列模型，持续结合不同模块，构建更多不同网络模型  
-横向拓展和引入关联技术等等   
+横向拓展和引入关联技术等等  
+跟进：YOLO-mask & YOLO-pose  
 
 ______________________________________________________________________
 
